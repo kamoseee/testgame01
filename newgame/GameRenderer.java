@@ -49,11 +49,10 @@ public class GameRenderer {
     }
 
     private void drawEnemies(Graphics g, int offsetX, int offsetY) {
-        for (Enemy enemy : game.getEnemies()) {
-            enemy.draw(g, offsetX, offsetY);
-            drawEnemyHealthBar(g, enemy, offsetX, offsetY);
-        }
+    for (Enemy enemy : game.getEnemies()) {
+        enemy.draw(g, offsetX, offsetY); // 敵自身に描画を委譲
     }
+}
 
     private void drawProjectiles(Graphics g, int offsetX, int offsetY) {
         for (Projectile projectile : game.getProjectiles()) {
@@ -96,38 +95,6 @@ public class GameRenderer {
         g.drawString(currentHp + "/" + maxHp, x + 260, y + 15);
     }
 
-    private void drawEnemyHealthBar(Graphics g, Enemy enemy, int offsetX, int offsetY) {
-        int x = enemy.getX() - offsetX;
-        int y = enemy.getY() - offsetY;
-
-        int barWidth = 150;
-        int barHeight = 18;
-        int barX = x + enemy.getWidth() / 2 - barWidth / 2;
-        int barY = y - 10;
-
-        int currentHp = enemy.getCurrentHp();
-        int maxHp = enemy.getMaxHp();
-        int filledWidth = (int) (barWidth * ((double) currentHp / maxHp));
-
-        g.setColor(Color.BLACK);
-        g.fillRect(barX, barY, barWidth, barHeight);
-
-        Color hpColor = Color.GREEN;
-        if (currentHp <= maxHp * 0.5)
-            hpColor = Color.YELLOW;
-        if (currentHp <= maxHp * 0.25)
-            hpColor = Color.RED;
-
-        g.setColor(hpColor);
-        g.fillRect(barX, barY, filledWidth, barHeight);
-
-        g.setColor(Color.WHITE);
-        g.drawRect(barX, barY, barWidth, barHeight);
-
-        g.setFont(new Font("Arial", Font.BOLD, 16));
-        g.setColor(Color.BLACK);
-        g.drawString("Lv." + enemy.getLevel(), x + 220, y + 15);
-    }
 
     private void drawStatusPanel(Graphics g) {
         int panelX = game.getWidth() - 220;

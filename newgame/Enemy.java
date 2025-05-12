@@ -123,17 +123,41 @@ public class Enemy {
 
     public void draw(Graphics g, int offsetX, int offsetY) {
         Graphics2D g2d = (Graphics2D) g;
-    Composite original = g2d.getComposite();
+        Composite original = g2d.getComposite();
 
-    if (dying) {
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-    }
+        // 敵が死亡アニメーション中の場合の透明度処理
+        if (dying) {
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+        }
 
-    g2d.drawImage(image, x - offsetX, y - offsetY, null);
+        // 敵の画像を描画
+        g2d.drawImage(image, x - offsetX, y - offsetY, null);
 
-    if (dying) {
-        g2d.setComposite(original);
-    }
+        // ヘルスバーを描画
+        int barWidth = 150;
+        int barHeight = 18;
+        int barX = x - offsetX + getWidth() / 2 - barWidth / 2;
+        int barY = y - offsetY - 10;
+
+        int filledWidth = (int) (barWidth * ((double) currentHp / maxHp));
+        g.setColor(Color.BLACK);
+        g.fillRect(barX, barY, barWidth, barHeight);
+
+        Color hpColor = currentHp > maxHp * 0.5 ? Color.GREEN : currentHp > maxHp * 0.25 ? Color.YELLOW : Color.RED;
+        g.setColor(hpColor);
+        g.fillRect(barX, barY, filledWidth, barHeight);
+
+        g.setColor(Color.WHITE);
+        g.drawRect(barX, barY, barWidth, barHeight);
+
+        // レベル表示
+        g.setFont(new Font("Arial", Font.BOLD, 16));
+        g.setColor(Color.BLACK);
+        g.drawString("Lv." + level, barX + barWidth + 10, barY + 15);
+
+        if (dying) {
+            g2d.setComposite(original);
+        }
     }
     public void startDying() {
         this.dying = true;

@@ -21,15 +21,7 @@ public class AOEEffect {
         return System.currentTimeMillis() - startTime > duration;
     }
 
-    public void draw(Graphics g, int offsetX, int offsetY) {
-        int drawX = centerX - offsetX;
-        int drawY = centerY - offsetY;
-
-        g.setColor(new Color(255, 0, 0, 100)); // 半透明の赤色
-        g.fillOval(drawX - radius, drawY - radius, radius * 2, radius * 2); // 中心座標を考慮
-    }
-
-    public void applyEffect(Bykin player, List<Enemy> enemies, List<DamageDisplay> damageDisplays) {
+    public void applyEffect(Bykin bykin, List<Enemy> enemies, List<DamageDisplay> damageDisplays) {
         int attackRadiusSquared = radius * radius; // 範囲の二乗を計算（高速化）
 
         for (Enemy enemy : enemies) {
@@ -55,11 +47,12 @@ public class AOEEffect {
 
                     if (distanceSquared <= attackRadiusSquared) { // 範囲内ならダメージ適用
                         if (!damageApplied) { // まだダメージを適用していない場合のみ
-                            int actualDamage = enemy.takeDamage(player.getStatus().getAttack() * 2);
+                            System.out.println("敵にダメージ適用: " + enemy.getX() + ", " + enemy.getY()); // デバッグ用
+                            int actualDamage = enemy.takeDamage(bykin.getStatus().getAttack() * 2);
                             damageDisplays.add(new DamageDisplay(actualDamage, worldX, worldY)); // ダメージ表示
 
                             if (enemy.getCurrentHp() <= 0) {
-                                player.getStatus().addExperience(enemy.getLevel() * 20);
+                                bykin.getStatus().addExperience(enemy.getLevel() * 20);
                                 enemy.startDying();
                             }
 
@@ -71,5 +64,13 @@ public class AOEEffect {
                 if (damageApplied) break; // すでにダメージを適用したらループを抜ける
             }
         }
+    }
+
+    public void draw(Graphics g, int offsetX, int offsetY) {
+        int drawX = centerX - offsetX;
+        int drawY = centerY - offsetY;
+
+        g.setColor(new Color(255, 0, 0, 100)); // 半透明の赤色
+        g.fillOval(drawX - radius, drawY - radius, radius * 2, radius * 2); // 中心座標を考慮
     }
 }

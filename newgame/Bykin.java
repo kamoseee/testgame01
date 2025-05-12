@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 public class Bykin {
     private BufferedImage image;
     private int x, y;
+    private double baseSpeed; // 最低速度を表すフィールドを追加
     private Status status;
     private Image skillImage;
     private boolean invincible = false;
@@ -23,7 +24,8 @@ public class Bykin {
         this.y = startY;
         this.game = game; // `game` をセット
         this.status = new Status(1, 10, 5, 3, 100, game); // `Status` を適切に初期化
-    
+        this.baseSpeed = 0.5; // 初期値を設定（例：1.0）
+
         try {
             image = ImageIO.read(new File("assets/bykin.png"));
             skillImage = ImageIO.read(new File("assets/E.png"));
@@ -51,22 +53,39 @@ public class Bykin {
     }
     
 
+    public void move(boolean movingUp, boolean movingDown, boolean movingLeft, boolean movingRight) {
+        int dx = 0, dy = 0;
+
+        if (movingUp) dy -= status.getSpeed();
+        if (movingDown) dy += status.getSpeed();
+        if (movingLeft) dx -= status.getSpeed();
+        if (movingRight) dx += status.getSpeed();
+
+        // 実際の移動処理（範囲チェックを含む）
+        move(dx, dy);
+    }
+
     public void move(int dx, int dy) {
-        int moveDistance = Math.min(status.getSpeed(), 10); // 最大移動距離を制限
-        double baseSpeed = 3; // レベル1の最低移動距離
-
-        double magnitude = Math.sqrt(dx * dx + dy * dy);
-        if (magnitude > 0) { // 斜め移動時の速度補正
-            dx = (int) ((dx / magnitude) * Math.max(moveDistance * 0.05, baseSpeed));
-            dy = (int) ((dy / magnitude) * Math.max(moveDistance * 0.05, baseSpeed));
+        if (dx == 0 && dy == 0) {
+            return; // 移動がない場合は処理をスキップ
         }
+        // 移動距離の計算を正規化
+        double distance = Math.max(1.0, Math.sqrt(dx * dx + dy * dy)); // 最小距離を1とする
+        double speed = Math.max(baseSpeed, status.getSpeed()); // speedにbaseSpeedを適用
 
-        x += dx;
-        y += dy;
+        // 移動量をスケールに基づいて計算
+        x += dx * (speed / distance);
+        y += dy * (speed / distance);
 
-        game.repaint();
+        // ステージの範囲内に座標を制限
+        x = Math.max(0, Math.min(x, game.getStage().getWidth() - getWidth()));
+        y = Math.max(0, Math.min(y, game.getStage().getHeight() - getHeight()));
+
+        game.repaint(); // 画面を更新して移動を反映
     }
     
+    
+
     public boolean isInvincible() {
         long now = System.currentTimeMillis();
         if (invincible && now - lastDamageTime >= INVINCIBLE_TIME) {
@@ -87,7 +106,7 @@ public class Bykin {
         }
         
         int reduced = Math.max(1, damage - status.getDefense()); // 最低1ダメージ
-        status.setCurrentHp(Math.max(0, status.getCurrentHp() - reduced)); // HPを負の値にしない
+        status.setCurrentHp(status.getCurrentHp() - reduced);
         System.out.println("ダメージを受けた！ 残HP: " + status.getCurrentHp());
     }
     

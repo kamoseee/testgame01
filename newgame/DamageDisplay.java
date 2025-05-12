@@ -4,7 +4,6 @@ public class DamageDisplay {
     private int x, y;
     private long timestamp;
     //private static final int DURATION = 1000; // 表示時間：1秒
-    private static final int DURATION = 1500; // 表示時間を1.5秒に延長
 
     public DamageDisplay(int damage, int x, int y) {
         this.damage = Math.max(1, damage); // ダメージが異常に大きくならないように修正
@@ -32,19 +31,16 @@ public class DamageDisplay {
         return timestamp;
     }
 
-    private static final int EXTRA_TIME = 200;
     public boolean isExpired() {
-        return System.currentTimeMillis() - timestamp > DURATION + EXTRA_TIME;
+        return System.currentTimeMillis() - timestamp > DURATION+200; // 200ms の余裕を持たせる
     }
 
-
+    private static final int DURATION = 1500; // 表示時間を1.5秒に延長
 
 public int getAlpha() {
     long elapsed = System.currentTimeMillis() - timestamp;
-    if (elapsed > DURATION) return 0; // 透明度が負にならないように
     int alpha = 255 - (int)(255 * elapsed / DURATION);
-    return Math.max(0, alpha);
+    return Math.max(0, alpha); // 最低0
 }
-
 
 }

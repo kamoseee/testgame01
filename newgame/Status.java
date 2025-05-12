@@ -14,7 +14,7 @@ public class Status {
         this.level = level;
         this.attack = attack;
         this.defense = defense;
-        this.speed = speed;
+        this.speed = 3;
         this.maxHp = maxHp;
         this.currentHp = maxHp;
         this.experience = 0;
@@ -57,17 +57,16 @@ public class Status {
     // 経験値を追加し、レベルアップ判定
     public void addExperience(int exp) {
         experience += exp;
-        while (experience >= experienceToNextLevel && level < 100) { // 上限を設定
+        while (experience >= experienceToNextLevel) {
             levelUp();
         }
-
     }
 
     // レベルアップ処理
     private void levelUp() {
         experience -= experienceToNextLevel;
         level++;
-        experienceToNextLevel = (int) (100 * Math.pow(1.2, level)); // 1.2倍ずつ増加
+        experienceToNextLevel = level * 100; // 次のレベルまでの経験値を更新
     
         // ステータス上昇
         attack += 2;
@@ -81,23 +80,21 @@ public class Status {
         System.out.println("レベルアップ！ 新しいレベル: " + level);
     
         game.setGameState(GameState.SHOW_STATS); // まずステータス変化画面を表示
-    game.repaint();
+        game.repaint();
 
     }
 
     public void takeDamage(int damage) {
-        int actualDamage = Math.max(1, damage - defense); // 最低1ダメージは受ける
-        currentHp -= actualDamage;
+        currentHp -= Math.max(0, damage - defense);
         if (currentHp < 0)
             currentHp = 0;
     }
 
-
     public void heal(int amount) {
-    int actualHeal = Math.min(amount, maxHp - currentHp); // 最大HPを超えないように制限
-    currentHp += actualHeal;
-}
-
+        currentHp += Math.max(0, amount);
+        if (currentHp > maxHp)
+            currentHp = maxHp;
+    }
 
     public void setCurrentHp(int hp) {
         currentHp = Math.max(0, Math.min(hp, maxHp)); // 0〜maxHpの範囲に収める

@@ -11,6 +11,8 @@ import java.awt.image.BufferedImage;  // これを追加
 public class Enemy {
     private int x, y;
     private BufferedImage image; 
+    private boolean isDead = false; // 敵が死亡しているかどうかを示すフラグ
+
     // 敵のステータス
     // 宣言だけ残す（初期化は
     private int level;
@@ -81,44 +83,56 @@ public class Enemy {
 
     // 敵のHPを減らす処理
     // 攻撃力と防御力を考慮したバージョン
+    @Override
     public int takeDamage(int attackerAttack) {
         int reduced = Math.max(1, attackerAttack - this.defense); // 最低1ダメージ
         this.currentHp -= reduced;
-        if (this.currentHp < 0) {
+        if (this.currentHp <= 0) {
             this.currentHp = 0;
+            this.startDying(); // 死亡アニメーションを開始
         }
-        //System.out.println("敵に与えたダメージ: " + reduced); // デバッグ用
         return reduced; // 実際に与えたダメージを返す
     }
-    
-    
+    // 当たり判定を無効化するための修正
+    @Override
+    public Rectangle getBounds() {
+        if (isDead) {
+            return new Rectangle(0, 0, 0, 0); // 当たり判定を無効化
+        }
+        return new Rectangle(x, y, image.getWidth(null), image.getHeight(null));
+    }
 
+    // 死亡状態を確認するゲッター
+    public boolean isDead() {
+        return isDead;
+    }
+    
         //ランダムに移動するメソッド（間隔を調整）
     public void move(int screenWidth, int screenHeight) {
-    long currentTime = System.currentTimeMillis();
-    
-    // 移動間隔が経過した場合のみ移動
-    if (currentTime - lastMoveTime >= MOVE_INTERVAL) {
-        int direction = rand.nextInt(4); // 0: 左, 1: 右, 2: 上, 3: 下
-        int moveDistance = speed; // 移動距離は速度に基づく
+        long currentTime = System.currentTimeMillis();
+        
+        // 移動間隔が経過した場合のみ移動
+        if (currentTime - lastMoveTime >= MOVE_INTERVAL) {
+            int direction = rand.nextInt(4); // 0: 左, 1: 右, 2: 上, 3: 下
+            int moveDistance = speed; // 移動距離は速度に基づく
 
-        int newX = x, newY = y; // 仮の移動値を作成
+            int newX = x, newY = y; // 仮の移動値を作成
 
-        switch (direction) {
-            case 0: newX -= moveDistance; break; // 左
-            case 1: newX += moveDistance; break; // 右
-            case 2: newY -= moveDistance; break; // 上
-            case 3: newY += moveDistance; break; // 下
+            switch (direction) {
+                case 0: newX -= moveDistance; break; // 左
+                case 1: newX += moveDistance; break; // 右
+                case 2: newY -= moveDistance; break; // 上
+                case 3: newY += moveDistance; break; // 下
+            }
+
+            // 画面端を超えないように制限
+            if (newX >= 0 && newX < screenWidth) x = newX;
+            if (newY >= 0 && newY < screenHeight) y = newY;
+
+            // 最後に移動した時刻を更新
+            lastMoveTime = currentTime;
         }
-
-        // 画面端を超えないように制限
-        if (newX >= 0 && newX < screenWidth) x = newX;
-        if (newY >= 0 && newY < screenHeight) y = newY;
-
-        // 最後に移動した時刻を更新
-        lastMoveTime = currentTime;
     }
-}
 
 
     public void draw(Graphics g, int offsetX, int offsetY) {
@@ -165,33 +179,29 @@ public class Enemy {
     public boolean isDying() {
         return dying;
     }
-    
     public boolean updateDying() {
         if (dying) {
             alpha -= 0.02f; // 徐々に透明に
             if (alpha <= 0) {
-                return true; // 消滅完了のサイン
+                isDead = true; // 完全に消滅したと判定
+                return true; // 消滅完了
             }
         }
         return false;
     }
-    
-    
-
     // 位置を取得するゲッター
     public int getX() {
         return x;
     }
-
     public int getY() {
         return y;
     }
     public BufferedImage getMaskImage() {
+        // 死亡アニメーション中または完全に消滅した場合はnullを返す
+        if (dying || alpha <= 0) {
+            return null;
+        }
         return (BufferedImage) image;
-    }
-    
-    public Rectangle getBounds() {
-        return new Rectangle(x, y, image.getWidth(null), image.getHeight(null));
     }
     
     public int getWidth() {
@@ -201,6 +211,32 @@ public class Enemy {
     public int getHeight() {
         return image.getHeight();
     }
-    
+    public boolean checkCollision(BufferedImage otherImage, int otherX, int otherY) {
+        if (dying || alpha <= 0) {
+            // 死亡中または透明の場合は当たり判定を無効化
+            return false;
+        }
+
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                // 自分のピクセルが透明（アルファ値が0）の場合は無視
+                int pixel = image.getRGB(x, y);
+                if ((pixel >> 24) == 0) {
+                    continue;
+                }
+
+                // 他のオブジェクトとの当たり判定
+                int worldX = this.x + x;
+                int worldY = this.y + y;
+                int otherPixel = otherImage.getRGB(worldX - otherX, worldY - otherY);
+
+                // 他のピクセルが透明でない場合、衝突と判定
+                if ((otherPixel >> 24) != 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     
 }

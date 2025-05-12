@@ -37,7 +37,7 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
     private GameLogic logic;
     private GameInputHandler inputHandler;
     private GameState gameState = GameState.START; // ゲームの状態を管理
-        private boolean isPaused = false; // 🔥 一時停止フラグを追加
+    private boolean isPaused = false; // 🔥 一時停止フラグを追加
 
 
     public BykinGame() {
@@ -56,22 +56,15 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
         addKeyListener(inputHandler);
     
         // 移動を定期的に更新するタイマー
-        Timer movementTimer = new Timer(32, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+        Timer movementTimer = new Timer(32, e -> {
+            if (!isPaused && gameState == GameState.GAME) {
                 inputHandler.updateMovement();
-                repaint();
             }
+            repaint();
         });
         movementTimer.start();
-    
-        enemies = new ArrayList<>();
-        enemies.add(new Enemy(500, 300, "assets/virus01.png", 1, 5, 1, 3, 30));
-        enemies.add(new Enemy(700, 400, "assets/virus02.png", 2, 7, 2, 3, 40));
-        enemies.add(new Enemy(900, 500, "assets/virus03.png", 3, 10, 3, 3, 60));
-        enemies.add(new Enemy(500, 900, "assets/virus01.png", 1, 5, 1, 3, 30));
-        enemies.add(new Enemy(200, 500, "assets/virus02.png", 2, 7, 2, 3, 40));
-        enemies.add(new Enemy(1000,1000, "assets/virus03.png", 3, 10, 3, 3, 60));
+        generateEnemies();
+
         setPreferredSize(new Dimension(1280, 720));
         setBackground(Color.WHITE);
         setFocusable(true);
@@ -85,10 +78,20 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
         // **GameRenderer を初期化**
         renderer = new GameRenderer(this);
     }
-    
+
+    private void generateEnemies() {
+        enemies.clear();
+        enemies.add(new Enemy(500, 300, "assets/virus01.png", 1, 5, 1, 3, 30));
+        enemies.add(new Enemy(700, 400, "assets/virus02.png", 2, 7, 2, 3, 40));
+        enemies.add(new Enemy(900, 500, "assets/virus03.png", 3, 10, 3, 3, 60));
+        enemies.add(new Enemy(500, 900, "assets/virus01.png", 1, 5, 1, 3, 30));
+        enemies.add(new Enemy(200, 500, "assets/virus02.png", 2, 7, 2, 3, 40));
+        enemies.add(new Enemy(1000, 1000, "assets/virus03.png", 3, 10, 3, 3, 60));
+    }
     public List<AOEEffect> getEffects() {
         return effects;
     }
+
     public long getLastAttackTime() {
         return lastAttackTime;
     }
@@ -114,11 +117,13 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
     public void togglePause() {
     isPaused = !isPaused;
 
-    if (isPaused) { // 一時停止時にキャラの移動をリセット
+    public void togglePause() {
+        isPaused = !isPaused;
+        if (isPaused) {
             dx = 0;
             dy = 0;
+            inputHandler.resetMovementFlags(); // 移動フラグのリセットを GameInputHandler に委譲
         }
-
         System.out.println("ゲームの状態: " + (isPaused ? "一時停止" : "再開"));
     }
     public void updateGame() {
@@ -129,91 +134,16 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
             System.err.println("エラー: GameLogic が初期化されていません！");
         }
     }
-    private void drawStatsScreen(Graphics g) {
-        g.setColor(new Color(0, 0, 0, 180));
-        g.fillRect(0, 0, getWidth(), getHeight());
     
-        g.setColor(Color.YELLOW);
-        g.setFont(new Font("SansSerif", Font.BOLD, 48));
-        g.drawString("レベルアップ！", getWidth() / 2 - 150, getHeight() / 2 - 100);
-    
-        g.setFont(new Font("SansSerif", Font.PLAIN, 24));
-        g.setColor(Color.WHITE);
-        Status s = bykin.getStatus();
-        g.drawString("新しいレベル: " + s.getLevel(), getWidth() / 2 - 100, getHeight() / 2 - 50);
-        g.drawString("攻撃力: " + s.getAttack(), getWidth() / 2 - 100, getHeight() / 2 - 20);
-        g.drawString("防御力: " + s.getDefense(), getWidth() / 2 - 100, getHeight() / 2 + 10);
-        g.drawString("速度: " + s.getSpeed(), getWidth() / 2 - 100, getHeight() / 2 + 40);
-        g.drawString("最大HP: " + s.getMaxHp(), getWidth() / 2 - 100, getHeight() / 2 + 70);
-        g.drawString("スペースキーで続行", getWidth() / 2 - 120, getHeight() / 2 + 120);
-    }
-    
-    private void drawLevelUpScreen(Graphics g) {
-        g.setColor(new Color(0, 0, 0, 180));
-        g.fillRect(0, 0, getWidth(), getHeight());
-    
-        g.setColor(Color.YELLOW);
-        g.setFont(new Font("SansSerif", Font.BOLD, 48));
-        g.drawString("スキルを選択してください", getWidth() / 2 - 150, getHeight() / 2 - 100);
-    
-        g.setFont(new Font("SansSerif", Font.PLAIN, 24));
-        g.setColor(Color.WHITE);
-        g.drawString("1: 範囲攻撃", getWidth() / 2 - 100, getHeight() / 2);
-        g.drawString("2: 貫通弾", getWidth() / 2 - 100, getHeight() / 2 + 30);
-        g.drawString("3: 連続攻撃", getWidth() / 2 - 100, getHeight() / 2 + 60);
-    }
     public void useAOEAttack() {
         int centerX = bykin.getX() + bykin.getWidth() / 2;
         int centerY = bykin.getY() + bykin.getHeight() / 2;
         int attackRadius = 200; // 範囲攻撃の半径
-    
-        //System.out.println("範囲攻撃エフェクト追加: " + centerX + ", " + centerY + " 半径: " + attackRadius); // デバッグ用    
-        getEffects().add(new AOEEffect(centerX, centerY, attackRadius, 2000)); // 2秒間表示
-    
-        //System.out.println("現在のエフェクト数: " + getEffects().size()); // デバッグ用
-    
-        int attackRadiusSquared = attackRadius * attackRadius; // 範囲の二乗を計算（高速化）
-    
-        for (Enemy enemy : getEnemies()) {
-            BufferedImage enemyImage = enemy.getImage(); // 敵の画像を取得
-            int enemyWidth = enemyImage.getWidth();
-            int enemyHeight = enemyImage.getHeight();
-            boolean damageApplied = false; // ダメージ適用済みかどうかのフラグ
-    
-            for (int x = 0; x < enemyWidth; x++) {
-                for (int y = 0; y < enemyHeight; y++) {
-                    int pixel = enemyImage.getRGB(x, y);
-    
-                    // 透明ピクセルは無視
-                    if ((pixel >> 24) == 0) {
-                        continue;
-                    }
-    
-                    int worldX = enemy.getX() + x;
-                    int worldY = enemy.getY() + y;
-    
-                    int distanceSquared = (worldX - centerX) * (worldX - centerX) +
-                                          (worldY - centerY) * (worldY - centerY);
-    
-                    if (distanceSquared <= attackRadiusSquared) { // 範囲内ならダメージ適用
-                        if (!damageApplied) { // まだダメージを適用していない場合のみ
-                            //System.out.println("敵にダメージ適用: " + enemy.getX() + ", " + enemy.getY()); // デバッグ用
-                            int actualDamage = enemy.takeDamage(bykin.getStatus().getAttack() * 2);
-                            getDamageDisplays().add(new DamageDisplay(actualDamage, worldX, worldY)); // ダメージ表示
-    
-                            if (enemy.getCurrentHp() <= 0) {
-                                bykin.getStatus().addExperience(enemy.getLevel() * 20);
-                                enemy.startDying();
-                            }
-    
-                            damageApplied = true; // ダメージ適用済みにする
-                        }
-                        break; // 1つでも当たり判定があればダメージ適用
-                    }
-                }
-                if (damageApplied) break; // すでにダメージを適用したらループを抜ける
-            }
-        }
+
+        AOEEffect effect = new AOEEffect(centerX, centerY, attackRadius, 2000); // 2秒間表示
+        effects.add(effect);
+
+        effect.applyEffect(bykin, enemies, damageDisplays); // ロジックを AOEEffect に委譲
     }
     
     
@@ -221,64 +151,15 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // プレイヤーのワールド座標から画面座標へのオフセットを計算
-        int offsetX = bykin.getX() - getCharX();
-        int offsetY = bykin.getY() - getCharY();
-
-        // エフェクトを描画
-        for (AOEEffect effect : effects) {
-            effect.draw(g, offsetX, offsetY); // 正しい引数を渡す
-        }
-
-
-        switch (getGameState()) {
-            case START:
-                new StartScreen().draw(g, getWidth(), getHeight());
-                break;
-            case GAME:
-                renderer.render(g);
-                //System.out.println("エフェクト描画開始: " + getEffects().size()); // デバッグ用
-                for (Iterator<AOEEffect> it = getEffects().iterator(); it.hasNext();) {
-                    AOEEffect effect = it.next();
-                    effect.draw(g, offsetX, offsetY); // 修正: 正しい引数を渡す
-                        if (effect.isExpired()) {
-                        it.remove();
-                    }
-                }
-                break;
-            case SHOW_STATS:
-                drawStatsScreen(g);
-                break;
-            case LEVEL_UP:
-                drawLevelUpScreen(g);
-                break;
-            case GAME_OVER:
-                new GameOverScreen().draw(g, getWidth(), getHeight());
-                break;
-        }
+        
+        // 全描画処理を GameRenderer に委譲
+        renderer.render(g);
     }
-      
     @Override
     public void actionPerformed(ActionEvent e) {
-        logic.updateGame(); // ゲームロジックを `GameLogic` に委譲
+        // Delegate all input handling to GameInputHandler
+        inputHandler.updateMovement();
         repaint();
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        if (!isPaused) { // ゲームが一時停止中なら処理を無効化
-                inputHandler.handleKeyPress(e);
-            }    
-        }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-        if (!isPaused) { // 一時停止中なら何もしない
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT -> dx = 0;
-            case KeyEvent.VK_UP, KeyEvent.VK_DOWN -> dy = 0;
-        }
-    }
     }
 
     @Override
@@ -391,23 +272,16 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
             System.out.println("スキルはクールダウン中です！");
             return;
         }
-    
+
         SkillType selectedSkill = bykin.getSelectedSkill();
         if (selectedSkill == null) {
             System.out.println("スキルが選択されていません！ 発動不可");
             return;
         }
-    
-        System.out.println("スキル発動！ 選択されたスキル: " + selectedSkill);
+
+        selectedSkill.execute(this); // スキルの実行を SkillType に委譲
         skillOnCooldown = true;
         skillUsedTime = System.currentTimeMillis();
-    
-        switch (selectedSkill) {
-            case AREA_ATTACK -> useAOEAttack();
-            case PIERCING_SHOT -> usePiercingShot();
-            case RAPID_FIRE -> useRapidFire();
-        }
-    
         repaint();
     }
     
@@ -454,10 +328,7 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
 
     public void restartGame() {
         bykin = new Bykin(100, 200, this);
-        enemies.clear();
-        enemies.add(new Enemy(500, 300, "assets/virus01.png", 1, 5, 1, 3, 30));
-        enemies.add(new Enemy(700, 400, "assets/virus02.png", 2, 7, 2, 3, 40));
-        enemies.add(new Enemy(900, 500, "assets/virus03.png", 3, 10, 3, 3, 60));
+        generateEnemies();
         isGameOver = false;
         skillOnCooldown = false;
         dx = 0;

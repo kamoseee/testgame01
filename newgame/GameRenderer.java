@@ -1,4 +1,5 @@
 package newgame;
+
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.util.Iterator;
@@ -29,12 +30,17 @@ public class GameRenderer {
                 drawHealthBar(g2d, 10, 10);
                 drawCoordinates(g2d);
                 drawSkillIcons(g2d);
+                drawEffects(g2d, offsetX, offsetY); // AOEEffect の描画と管理
+
                 if (game.isShowStatus()) {
                     drawStatusPanel(g2d);
                 }
                 break;
             case LEVEL_UP:
                 drawLevelUpScreen(g2d);
+                break;
+            case SHOW_STATS:
+                drawStatsScreen(g2d); // Use refactored method
                 break;
             case GAME_OVER:
                 new GameOverScreen().draw(g2d, game.getWidth(), game.getHeight());
@@ -62,14 +68,14 @@ public class GameRenderer {
 
         game.getDamageDisplays().removeIf(DamageDisplay::isExpired);
 
-for (DamageDisplay damage : game.getDamageDisplays()) {
-    int alpha = damage.getAlpha();
-    g2d.setColor(new Color(255, 0, 0, alpha));
+        for (DamageDisplay damage : game.getDamageDisplays()) {
+            int alpha = damage.getAlpha();
+            g2d.setColor(new Color(255, 0, 0, alpha));
 
-    int drawX = damage.getX() - offsetX;
-    int drawY = damage.getY() - offsetY;
-    g2d.drawString("-" + damage.getDamage(), drawX, drawY);
-}
+            int drawX = damage.getX() - offsetX;
+            int drawY = damage.getY() - offsetY;
+            g2d.drawString("-" + damage.getDamage(), drawX, drawY);
+        }
     }
 
     private void drawHealthBar(Graphics g, int x, int y) {
@@ -107,8 +113,10 @@ for (DamageDisplay damage : game.getDamageDisplays()) {
         g.fillRect(barX, barY, barWidth, barHeight);
 
         Color hpColor = Color.GREEN;
-        if (currentHp <= maxHp * 0.5) hpColor = Color.YELLOW;
-        if (currentHp <= maxHp * 0.25) hpColor = Color.RED;
+        if (currentHp <= maxHp * 0.5)
+            hpColor = Color.YELLOW;
+        if (currentHp <= maxHp * 0.25)
+            hpColor = Color.RED;
 
         g.setColor(hpColor);
         g.fillRect(barX, barY, filledWidth, barHeight);
@@ -162,20 +170,19 @@ for (DamageDisplay damage : game.getDamageDisplays()) {
             g2.setClip(new Ellipse2D.Float(skillX, skillY, iconSize, iconSize));
             g2.drawImage(skillImage, skillX, skillY, iconSize, iconSize, game);
             g2.setClip(null);
-    
+
             if (game.isSkillOnCooldown()) {
-    long elapsed = System.currentTimeMillis() - game.getSkillUsedTime();
-    if (elapsed >= game.getCooldownMax()) {
-        game.setSkillOnCooldown(false);
-    } else {
-        double cooldownRatio = (double) elapsed / game.getCooldownMax();
-        int angle = (int) (360 * (1 - cooldownRatio));
+                long elapsed = System.currentTimeMillis() - game.getSkillUsedTime();
+                if (elapsed >= game.getCooldownMax()) {
+                    game.setSkillOnCooldown(false);
+                } else {
+                    double cooldownRatio = (double) elapsed / game.getCooldownMax();
+                    int angle = (int) (360 * (1 - cooldownRatio));
 
-        g2.setColor(new Color(0, 0, 0, 150));
-        g2.fillArc(skillX, skillY, iconSize, iconSize, 90, angle);
-    }
-}
-
+                    g2.setColor(new Color(0, 0, 0, 150));
+                    g2.fillArc(skillX, skillY, iconSize, iconSize, 90, angle);
+                }
+            }
 
         }
 
@@ -197,28 +204,30 @@ for (DamageDisplay damage : game.getDamageDisplays()) {
         String coordText = "座標: (" + x + ", " + y + ")";
         g.drawString(coordText, 10, game.getHeight() - 10);
     }
+
     private void drawLevelUpScreen(Graphics g) {
         g.setColor(new Color(0, 0, 0, 180));
         g.fillRect(0, 0, game.getWidth(), game.getHeight());
-    
+
         g.setColor(Color.YELLOW);
         g.setFont(new Font("SansSerif", Font.BOLD, 48));
         g.drawString("スキルを選択してください", game.getWidth() / 2 - 150, game.getHeight() / 2 - 100);
-    
+
         g.setFont(new Font("SansSerif", Font.PLAIN, 24));
         g.setColor(Color.WHITE);
         g.drawString("1: 範囲攻撃", game.getWidth() / 2 - 100, game.getHeight() / 2);
         g.drawString("2: 貫通弾", game.getWidth() / 2 - 100, game.getHeight() / 2 + 30);
         g.drawString("3: 連続攻撃", game.getWidth() / 2 - 100, game.getHeight() / 2 + 60);
     }
+
     private void drawStatsScreen(Graphics g) {
         g.setColor(new Color(0, 0, 0, 180));
         g.fillRect(0, 0, game.getWidth(), game.getHeight());
-    
+
         g.setColor(Color.YELLOW);
         g.setFont(new Font("SansSerif", Font.BOLD, 48));
         g.drawString("レベルアップ！", game.getWidth() / 2 - 150, game.getHeight() / 2 - 100);
-    
+
         g.setFont(new Font("SansSerif", Font.PLAIN, 24));
         g.setColor(Color.WHITE);
         Status s = game.getBykin().getStatus();
@@ -230,4 +239,14 @@ for (DamageDisplay damage : game.getDamageDisplays()) {
         g.drawString("スペースキーで続行", game.getWidth() / 2 - 120, game.getHeight() / 2 + 120);
     }
     
-}    
+    private void drawEffects(Graphics g, int offsetX, int offsetY) {
+        Iterator<AOEEffect> it = game.getEffects().iterator();
+        while (it.hasNext()) {
+            AOEEffect effect = it.next();
+            effect.draw(g, offsetX, offsetY);
+            if (effect.isExpired()) {
+                it.remove();
+            }
+        }
+    }
+}

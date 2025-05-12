@@ -45,11 +45,11 @@ public class StatusPanel extends JPanel {
         }
     }
         @Override
-public Dimension getPreferredSize() {
-    int width = 220;
-    int height = Math.max(140, (bykin != null) ? 30 + 20 * 5 : 60); // ステータス数に応じた高さ
-    return new Dimension(width, height);
-}
+        public Dimension getPreferredSize() {
+            int width = 220;
+            int height = Math.max(140, (bykin != null) ? 30 + 20 * 5 : 60); // ステータス数に応じた高さ
+            return new Dimension(width, height);
+        }
 
 
 }

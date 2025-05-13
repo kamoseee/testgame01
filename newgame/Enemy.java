@@ -85,7 +85,32 @@ public class Enemy {
         //System.out.println("敵に与えたダメージ: " + reduced); // デバッグ用
         return reduced; // 実際に与えたダメージを返す
     }
-    
+    public boolean checkCollision(BufferedImage otherImage, int otherX, int otherY) {
+        // 体力が0の場合、常にfalseを返す
+        if (currentHp <= 0 || dying) {
+            return false;
+        }
+
+        int top = Math.max(y, otherY);
+        int bottom = Math.min(y + image.getHeight(), otherY + otherImage.getHeight());
+        int left = Math.max(x, otherX);
+        int right = Math.min(x + image.getWidth(), otherX + otherImage.getWidth());
+
+        for (int py = top; py < bottom; py++) {
+            for (int px = left; px < right; px++) {
+                // 自分の画像のピクセル
+                int myPixel = image.getRGB(px - x, py - y);
+                // 相手の画像のピクセル
+                int otherPixel = otherImage.getRGB(px - otherX, py - otherY);
+
+                // どちらも不透明（アルファ値が0より大きい）なら衝突
+                if (((myPixel >> 24) & 0xFF) > 0 && ((otherPixel >> 24) & 0xFF) > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     
 
         //ランダムに移動するメソッド（間隔を調整）
@@ -94,45 +119,30 @@ public class Enemy {
         
         // 移動間隔が経過した場合のみ移動
         if (currentTime - lastMoveTime >= MOVE_INTERVAL) {
-            int direction = rand.nextInt(4); // 0: 左, 1: 右, 2: 上, 3: 下
-            int moveDistance = speed; // 移動距離は速度に基づく
+            int[] dx = {-speed, speed, 0, 0}; // 左, 右, 上, 下
+            int[] dy = {0, 0, -speed, speed};
+            int direction = rand.nextInt(4);
 
-            switch (direction) {
-                case 0: // 左
-                        
-                    if (x - moveDistance >= 0) x -= moveDistance;
-                    break;
-                case 1: // 右
-                        
-                    if (x + moveDistance < screenWidth) x += moveDistance;
-                    break;
-                case 2: // 上
-                        
-                    if (y - moveDistance >= 0) y -= moveDistance;
-                    break;
-                case 3: // 下
-                    if (y + moveDistance < screenHeight) y += moveDistance;
-                    break;
-            }
+            x = Math.max(0, Math.min(x + dx[direction], screenWidth - getWidth()));
+            y = Math.max(0, Math.min(y + dy[direction], screenHeight - getHeight()));
 
-            // 最後に移動した時刻を更新
             lastMoveTime = currentTime;
         }
     }
 
     public void draw(Graphics g, int offsetX, int offsetY) {
         Graphics2D g2d = (Graphics2D) g;
-    Composite original = g2d.getComposite();
+        Composite original = g2d.getComposite();
 
-    if (dying) {
-        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-    }
+        if (dying) {
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+        }
 
-    g2d.drawImage(image, x - offsetX, y - offsetY, null);
+        g2d.drawImage(image, x - offsetX, y - offsetY, null);
 
-    if (dying) {
-        g2d.setComposite(original);
-    }
+        if (dying) {
+            g2d.setComposite(original);
+        }
     }
     public void startDying() {
         this.dying = true;
@@ -150,8 +160,12 @@ public class Enemy {
         }
         return false;
     }
-    
-    
+    // Enemyクラスに追加
+    public boolean isDead() {
+        return currentHp <= 0 && alpha <= 0; // HPが0で透明化終了
+    }
+
+
 
     // 位置を取得するゲッター
     public int getX() {

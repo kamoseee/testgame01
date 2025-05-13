@@ -1,14 +1,16 @@
 package newgame;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import java.io.File;
 
 public class Projectile {
     protected double x, y; // `protected` に変更
     protected int speed = 10;
     protected double angle;
+    private int damage = 10; // デフォルトのダメージ値を設定
     private BufferedImage image;
     private BufferedImage maskImage; // ピクセル単位の判定用マスク画像
     private String imagePath;
@@ -20,10 +22,12 @@ public class Projectile {
         this.imagePath = imagePath;
         loadImages();
     }
+
     public boolean canPassThroughEnemies() {
         return false; // 通常の弾は貫通しない
     }
-    protected  void loadImages() {
+
+    protected void loadImages() {
         try {
             File file = new File(imagePath);
             if (file.exists()) {
@@ -74,5 +78,15 @@ public class Projectile {
 
     public int getY() {
         return (int) y;
+    }
+
+    // 新しく追加されたメソッド: getDamage()
+    public int getDamage() {
+        return damage;
+    }
+
+    // ダメージを設定するメソッドを追加（必要に応じて）
+    public void setDamage(int damage) {
+        this.damage = damage;
     }
 }

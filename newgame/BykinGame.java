@@ -80,36 +80,32 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
         // **GameRenderer を初期化**
         renderer = new GameRenderer(this);
     }
-    private void initializeGame() {
-        // プレイヤーキャラクターの生成
-        bykin = new Bykin(100, 200, this);
+        private void initializeGame() {
+            // プレイヤーキャラクターの生成
+            bykin = new Bykin(100, 200, this);
 
-        // 敵リストを初期化
-        enemies = new ArrayList<>();
-        enemies.add(new Enemy(500, 300, "assets/virus01.png", 1, 5, 1, 3, 30));
-        enemies.add(new Enemy(700, 400, "assets/virus02.png", 2, 7, 2, 3, 40));
-        enemies.add(new Enemy(900, 500, "assets/virus03.png", 3, 10, 3, 3, 60));
-        enemies.add(new Enemy(500, 900, "assets/virus01.png", 1, 5, 1, 3, 30));
-        enemies.add(new Enemy(200, 500, "assets/virus02.png", 2, 7, 2, 3, 40));
-        enemies.add(new Enemy(1000, 1000, "assets/virus03.png", 3, 10, 3, 3, 60));
+            // 敵リストを初期化
+            enemies = new ArrayList<>();
+            enemies.add(new Enemy(500, 300, "assets/virus01.png", 1, 5, 1, 3, 30));
+            enemies.add(new Enemy(700, 400, "assets/virus02.png", 2, 7, 2, 3, 40));
+            enemies.add(new Enemy(900, 500, "assets/virus03.png", 3, 10, 3, 3, 60));
+
+            // 状態のリセット
+            isGameOver = false;
+            skillOnCooldown = false;
+            dx = 0;
+            dy = 0;
+        }    
+        public List<AOEEffect> getEffects() {
+            return effects;
+        }
+        public long getLastAttackTime() {
+            return lastAttackTime;
+        }
+        public void setLastAttackTime(long time) {
+            lastAttackTime = time;
+        }
         
-        // 状態のリセット
-        isGameOver = false;
-        skillOnCooldown = false;
-        dx = 0;
-        dy = 0;
-    }    
-    public List<AOEEffect> getEffects() {
-        return effects;
-    }
-    public long getLastAttackTime() {
-        return lastAttackTime;
-    }
-    
-    public void setLastAttackTime(long time) {
-        lastAttackTime = time;
-    }
-    
     public int getMouseX() {
         return mouseX;
     }
@@ -121,11 +117,10 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
     public void setBykin(Bykin bykin) {
         this.bykin = bykin;
     }
+    
     public void updateGame() {
         if (logic != null) {
             logic.updateGame(); // `logic` が `null` でない場合のみ実行
-        } else {
-            System.err.println("エラー: GameLogic が初期化されていません！");
         }
     }
     public boolean isPaused() {
@@ -137,7 +132,6 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
             dx = 0; // キャラクターの動きを止める
             dy = 0;
         }
-        System.out.println("ゲーム状態: " + (isPaused ? "一時停止" : "再開"));
         repaint(); // 再描画して一時停止画面を表示
     }
     public void useAOEAttack() {
@@ -147,7 +141,6 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
 
         // 範囲攻撃エフェクトを作成して追加
         AOEEffect aoeEffect = new AOEEffect(centerX, centerY, attackRadius, 2000);
-        System.out.println("範囲攻撃エフェクト追加: " + centerX + ", " + centerY + " 半径: " + attackRadius); // デバッグ用
         getEffects().add(aoeEffect);
 
         // 範囲攻撃のダメージ処理をAOEEffectに委譲
@@ -175,7 +168,6 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
                 break;
             case GAME:
                 renderer.render(g);
-                //System.out.println("エフェクト描画開始: " + getEffects().size()); // デバッグ用
                 for (Iterator<AOEEffect> it = getEffects().iterator(); it.hasNext();) {
                     AOEEffect effect = it.next();
                     effect.draw(g, offsetX, offsetY); // 修正: 正しい引数を渡す
@@ -209,6 +201,12 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
     @Override
     public void keyPressed(KeyEvent e) {
         inputHandler.handleKeyPress(e); // 入力処理を `GameInputHandler` に委譲
+        
+    }
+    public void returnToStartScreen() {
+        System.out.println("スタート画面に戻ります。"); // デバッグ用
+        setGameState(GameState.START); // ゲーム状態をスタートに設定
+        repaint(); // 再描画してスタート画面を表示
     }
 
     @Override
@@ -336,7 +334,6 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
             return;
         }
     
-        System.out.println("スキル発動！ 選択されたスキル: " + selectedSkill);
         skillOnCooldown = true;
         skillUsedTime = System.currentTimeMillis();
     

@@ -59,23 +59,31 @@ public class GameRenderer {
 
     private void drawDamageDisplays(Graphics g, int offsetX, int offsetY) {
         Graphics2D g2d = (Graphics2D) g;
-        g2d.setFont(new Font("Arial", Font.BOLD, 32));
 
-        Iterator<DamageDisplay> iter = game.getDamageDisplays().iterator();
-        while (iter.hasNext()) {
-            DamageDisplay damage = iter.next();
+        for (Iterator<DamageDisplay> it = game.getDamageDisplays().iterator(); it.hasNext();) {
+            DamageDisplay display = it.next();
 
-            if (damage.isExpired()) {
-                iter.remove();
+            // 時間切れの場合はリストから削除
+            if (display.isExpired()) {
+                it.remove();
                 continue;
             }
 
-            int alpha = damage.getAlpha();
-            g2d.setColor(new Color(255, 0, 0, alpha));
+            // 描画位置を計算
+            int drawX = display.getX() - offsetX;
+            int drawY = display.getY() - offsetY;
 
-            int drawX = damage.getX() - offsetX;
-            int drawY = damage.getY() - offsetY;
-            g2d.drawString("-" + damage.getDamage(), drawX, drawY);
+            // アルファ値（透明度）を設定
+            int alpha = display.getAlpha();
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha / 255f));
+
+            // ダメージ数値を描画
+            g2d.setColor(Color.RED);
+            g2d.setFont(new Font("Arial", Font.BOLD,32));
+            g2d.drawString(String.valueOf(display.getDamage()), drawX, drawY);
+
+            // アルファ値を元に戻す
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
         }
     }
 

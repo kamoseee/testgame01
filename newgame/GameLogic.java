@@ -55,6 +55,10 @@ public class GameLogic {
     private void handleProjectileCollisions() {
         for (Iterator<Enemy> it = game.getEnemies().iterator(); it.hasNext();) {
             Enemy enemy = it.next();
+            // 敵のHPが0なら衝突判定をスキップ
+            if (enemy.getCurrentHp() <= 0) {
+                continue;
+            }
             for (Iterator<Projectile> projIt = game.getProjectiles().iterator(); projIt.hasNext();) {
                 Projectile projectile = projIt.next();
     
@@ -83,9 +87,27 @@ public class GameLogic {
         }
     
         game.getEnemies().removeIf(enemy -> enemy.isDying() && enemy.updateDying());
+        // handleProjectileCollisionsメソッド内
+        game.getEnemies().removeIf(Enemy::isDead);
+    
     }
     
-    
+    public void handleCollision(Enemy enemy, Projectile projectile) {
+        // ダメージ計算
+        int damage = projectile.getDamage();
+        enemy.takeDamage(damage);
+
+        // **敵の中心位置を計算**
+        int damageX = enemy.getX() + enemy.getWidth() / 2;
+        int damageY = enemy.getY() + enemy.getHeight() / 2;
+
+        // DamageDisplay を作成してリストに追加
+        DamageDisplay damageDisplay = new DamageDisplay(damage, damageX, damageY);
+        game.getDamageDisplays().add(damageDisplay);
+
+        // プロジェクト削除後の処理
+        game.getProjectiles().remove(projectile);
+    }
 
     private void handleAutoAttack() {
         if (System.currentTimeMillis() - game.getLastAttackTime() >= 2000) {

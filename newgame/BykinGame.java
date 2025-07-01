@@ -39,100 +39,79 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
     private GameLogic logic;
     private GameInputHandler inputHandler;
     private GameState gameState = GameState.START; // ゲームの状態を管理
-    
+    private StatusPanel statusPanel;
 
 
-    public BykinGame() {
-        setFocusTraversalKeysEnabled(false);
-        
-        // **GameLogic を最初に初期化**
-        logic = new GameLogic(this); 
-        inputHandler = new GameInputHandler(this);
-        bykin = new Bykin(100, 200, this);
-        stage = new Stage(2000, 2000);
-        
-        addMouseMotionListener(this);
-        setFocusable(true);
-        requestFocusInWindow(); // フォーカスを設定
-        addKeyListener(inputHandler);
-    
+
+    public BykinGame() {       
+        initializeGame();
+
+        renderer = new GameRenderer(this);// **GameRenderer を初期化**
+        logic = new GameLogic(this); // **GameLogic を初期化**
+        statusPanel = new StatusPanel(bykin); // `StatusPanel` をインスタンス化
+        inputHandler = new GameInputHandler(this, statusPanel); // `GameInputHandler` に渡す        bykin = new Bykin(100, 200, this);// **Bykin を初期化**
+        stage = new Stage(2000, 2000);// **Stage を初期化**
+                
+        setFocusTraversalKeysEnabled(false);// フォーカス移動キーを無効化
+        addMouseMotionListener(this);// **マウスモーションリスナーを追加**
+        setFocusable(true);// BykinGameがキーボードやマウスの入力を受け取れる
+        addKeyListener(inputHandler);// **GameInputHandler にキーボードリスナーを追加**
+        addKeyListener(this);// **BykinGame にキーボードリスナーを追加**
+
         // 移動を定期的に更新するタイマー
-        movementTimer = new Timer(32, e -> {
+        movementTimer = new Timer(16, e -> {
             if (!isPaused) { // 一時停止中でない場合のみ移動を更新
                 inputHandler.updateMovement();
             }
             repaint();
         });
         movementTimer.start();
-
-        initializeGame();
-
-        setPreferredSize(new Dimension(1280, 720));
-        setBackground(Color.WHITE);
-        setFocusable(true);
-        addKeyListener(this);
-    
-        timer = new Timer(16, this);
+        timer = new Timer(32, this);//actionPerformedメソッドを呼び出すタイマー
         timer.start();
+    
+
+        requestFocusInWindow(); // フォーカスを設定
+        setPreferredSize(new Dimension(1280, 720));// ウィンドウサイズを設定
+        //setBackground(Color.WHITE);
     
         gameState = GameState.START;
     
-        // **GameRenderer を初期化**
-        renderer = new GameRenderer(this);
     }
-        private void initializeGame() {
-            // プレイヤーキャラクターの生成
-            bykin = new Bykin(100, 200, this);
-
-            // 敵リストを初期化
-            enemies = new ArrayList<>();
-            enemies.add(new Enemy(500, 300, "assets/virus01.png", 1, 5, 1, 3, 30));
-            enemies.add(new Enemy(700, 400, "assets/virus02.png", 2, 7, 2, 3, 40));
-            enemies.add(new Enemy(900, 500, "assets/virus03.png", 3, 10, 3, 3, 60));
-
-            // 状態のリセット
-            isGameOver = false;
-            skillOnCooldown = false;
-            dx = 0;
-            dy = 0;
-        }    
-        public List<AOEEffect> getEffects() {
-            return effects;
-        }
-        public long getLastAttackTime() {
-            return lastAttackTime;
-        }
-        public void setLastAttackTime(long time) {
-            lastAttackTime = time;
-        }
-        
-    public int getMouseX() {
-        return mouseX;
-    }
+    private void initializeGame() {// ゲームの初期化処理
+        // プレイヤーキャラクターの生成
+        bykin = new Bykin(100, 200, this);
     
-    public int getMouseY() {
-        return mouseY;
-    }
+        // 敵リストを初期化
+        enemies = new ArrayList<>();
+        enemies.add(new Enemy(500, 300, "assets/virus01.png", 1, 5, 1, 3, 30));
+        enemies.add(new Enemy(700, 400, "assets/virus02.png", 2, 7, 2, 3, 40));
+        enemies.add(new Enemy(900, 500, "assets/virus03.png", 3, 10, 3, 3, 60));
 
-    public void setBykin(Bykin bykin) {
-        this.bykin = bykin;
-    }
+        // 状態のリセット
+        isGameOver = false;
+        skillOnCooldown = false;
+        dx = 0;
+        dy = 0;
+    }    
     
     public void updateGame() {
-        if (logic != null) {
-            logic.updateGame(); // `logic` が `null` でない場合のみ実行
+        if (isPaused) {
+            return; // ゲームを一時停止
         }
+        logic.updateGame(); // ゲームロジックを更新
     }
+
     public boolean isPaused() {
         return isPaused;
     }
+
     public void togglePause() {
         isPaused = !isPaused;
         if (isPaused) {
             dx = 0; // キャラクターの動きを止める
-            dy = 0;
+            dy = 0;  
         }
-        repaint(); // 再描画して一時停止画面を表示
+        repaint();
     }
     public void useAOEAttack() {
         int centerX = bykin.getX() + bykin.getWidth() / 2;
@@ -147,45 +126,44 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
         aoeEffect.applyEffect(bykin, getEnemies(), getDamageDisplays());
     }
     
+    private void handleEnemyAttacks() {
+        for (Enemy enemy : enemies) {
+            if (enemy.checkCollision(bykin.getImage(), bykin.getX(), bykin.getY())) {
+                bykin.takeDamage(enemy.getAttack());
+                System.out.println("プレイヤーがダメージを受けました！");
+            }
+        }
+    }
     
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        
-        // プレイヤーのワールド座標から画面座標へのオフセットを計算
+        Graphics2D g2d = (Graphics2D) g;
+                // プレイヤーのワールド座標から画面座標へのオフセットを計算
         int offsetX = bykin.getX() - getCharX();
         int offsetY = bykin.getY() - getCharY();
-
         // エフェクトを描画
         for (AOEEffect effect : effects) {
             effect.draw(g, offsetX, offsetY); // 正しい引数を渡す
-        }
-
-
+        } 
         switch (getGameState()) {
-            case START:
-                new StartScreen().draw(g, getWidth(), getHeight());
-                break;
-            case GAME:
-                renderer.render(g);
-                for (Iterator<AOEEffect> it = getEffects().iterator(); it.hasNext();) {
-                    AOEEffect effect = it.next();
-                    effect.draw(g, offsetX, offsetY); // 修正: 正しい引数を渡す
-                        if (effect.isExpired()) {
-                        it.remove();
-                    }
+                    case START:
+                        new StartScreen().draw(g, getWidth(), getHeight());
+                        break;
+                    case GAME:
+                        renderer.render(g);
+                        renderer.drawEffects(g2d, offsetX, offsetY);
+                        break;
+                    case LEVEL_UP_STATS:
+                        renderer.drawStatsScreen(g);
+                        break;
+                    case LEVEL_UP:
+                        renderer.drawLevelUpScreen(g);
+                        break;
+                    case GAME_OVER:
+                        new GameOverScreen().draw(g, getWidth(), getHeight());
+                        break;
                 }
-                break;
-            case SHOW_STATS:
-                renderer.drawStatsScreen(g);
-                break;
-            case LEVEL_UP:
-                renderer.drawLevelUpScreen(g);
-                break;
-            case GAME_OVER:
-                new GameOverScreen().draw(g, getWidth(), getHeight());
-                break;
-        }
     }
       
     @Override
@@ -229,10 +207,110 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
 
     @Override
     public void mouseDragged(MouseEvent e) {}
+    
+    public void useSkill() {
+        if (skillOnCooldown) {
+            System.out.println("スキルはクールダウン中です！");
+            return;
+        }
+    
+        SkillType selectedSkill = bykin.getSelectedSkill();
+        if (selectedSkill == null) {
+            System.out.println("スキルが選択されていません！ 発動不可");
+            return;
+        }
+    
+        skillOnCooldown = true;
+        skillUsedTime = System.currentTimeMillis();
+    
+        switch (selectedSkill) {
+            case AREA_ATTACK -> useAOEAttack();
+            case PIERCING_SHOT -> usePiercingShot();
+            case RAPID_FIRE -> useRapidFire();
+        }
+    
+        repaint();
+    }
+        
+    private void usePiercingShot() {
+        int centerX = bykin.getX() + bykin.getWidth() / 2;
+        int centerY = bykin.getY() + bykin.getHeight() / 2;
+            // ワールド座標系でのマウス位置を取得
+        int offsetX = bykin.getX() - charX;
+        int offsetY = bykin.getY() - charY;
+        int worldMouseX = mouseX + offsetX;
+        int worldMouseY = mouseY + offsetY;
+            // 発射角度を計算
+        double angle = Math.atan2(worldMouseY - centerY, worldMouseX - centerX);
 
+        // 貫通弾を発射
+        projectiles.add(new SkillProjectile(centerX, centerY, angle, "assets/skill_attack.png",bykin));
+    }
+    
+    private void useRapidFire() {
+        int centerX = bykin.getX() + bykin.getWidth() / 2;
+        int centerY = bykin.getY() + bykin.getHeight() / 2;
+    
+        int offsetX = bykin.getX() - charX;
+        int offsetY = bykin.getY() - charY;
+    
+        int worldMouseX = mouseX + offsetX;
+        int worldMouseY = mouseY + offsetY;
+        double angle = Math.atan2(worldMouseY - centerY, worldMouseX - centerX);
+    
+        // 通常攻撃の弾
+        projectiles.add(new Projectile(centerX, centerY, angle, "assets/attack.png",bykin));
+    
+        // 追加の2発（少し角度を変える）
+        double spreadAngle = Math.toRadians(10); // 10度の角度差
+        projectiles.add(new Projectile(centerX, centerY, angle + spreadAngle, "assets/attack.png",bykin));
+        projectiles.add(new Projectile(centerX, centerY, angle - spreadAngle, "assets/attack.png",bykin));
+    }
+    
+    
+    public void useSpecial() {
+        System.out.println("必殺技発動！");
+    }
+
+    /**
+     * ゲームの再スタート処理
+     */
+    public void restartGame() {
+        initializeGame(); // 初期化処理を呼び出す
+        gameState = GameState.GAME;
+        repaint();
+    }
+    
+    public List<AOEEffect> getEffects() {
+        return effects;
+    }
+        
+    public long getLastAttackTime() {
+        return lastAttackTime;
+    }
+        
+    public void setLastAttackTime(long time) {
+        lastAttackTime = time;
+    }
+        
+    public int getMouseX() {
+        return mouseX;
+    }
+    
+    public int getMouseY() {
+        return mouseY;
+    }
+
+    public void setBykin(Bykin bykin) {
+        this.bykin = bykin;
+    }
     public Bykin getBykin() {
+        if (bykin == null) {
+            System.out.println("Warning: Bykin is not initialized!");
+        }
         return bykin;
     }
+
 
     public Stage getStage() {
         return stage;
@@ -322,79 +400,4 @@ public class BykinGame extends JPanel implements KeyListener, MouseMotionListene
         return cooldownMax;
     }
 
-    public void useSkill() {
-        if (skillOnCooldown) {
-            System.out.println("スキルはクールダウン中です！");
-            return;
-        }
-    
-        SkillType selectedSkill = bykin.getSelectedSkill();
-        if (selectedSkill == null) {
-            System.out.println("スキルが選択されていません！ 発動不可");
-            return;
-        }
-    
-        skillOnCooldown = true;
-        skillUsedTime = System.currentTimeMillis();
-    
-        switch (selectedSkill) {
-            case AREA_ATTACK -> useAOEAttack();
-            case PIERCING_SHOT -> usePiercingShot();
-            case RAPID_FIRE -> useRapidFire();
-        }
-    
-        repaint();
-    }
-    
-    
-        
-    private void usePiercingShot() {
-        int centerX = bykin.getX() + bykin.getWidth() / 2;
-        int centerY = bykin.getY() + bykin.getHeight() / 2;
-            // ワールド座標系でのマウス位置を取得
-        int offsetX = bykin.getX() - charX;
-        int offsetY = bykin.getY() - charY;
-        int worldMouseX = mouseX + offsetX;
-        int worldMouseY = mouseY + offsetY;
-            // 発射角度を計算
-        double angle = Math.atan2(worldMouseY - centerY, worldMouseX - centerX);
-
-        // 貫通弾を発射
-        projectiles.add(new SkillProjectile(centerX, centerY, angle, "assets/skill_attack.png"));
-    }
-    private void useRapidFire() {
-        int centerX = bykin.getX() + bykin.getWidth() / 2;
-        int centerY = bykin.getY() + bykin.getHeight() / 2;
-    
-        int offsetX = bykin.getX() - charX;
-        int offsetY = bykin.getY() - charY;
-    
-        int worldMouseX = mouseX + offsetX;
-        int worldMouseY = mouseY + offsetY;
-        double angle = Math.atan2(worldMouseY - centerY, worldMouseX - centerX);
-    
-        // 通常攻撃の弾
-        projectiles.add(new Projectile(centerX, centerY, angle, "assets/attack.png"));
-    
-        // 追加の2発（少し角度を変える）
-        double spreadAngle = Math.toRadians(10); // 10度の角度差
-        projectiles.add(new Projectile(centerX, centerY, angle + spreadAngle, "assets/attack.png"));
-        projectiles.add(new Projectile(centerX, centerY, angle - spreadAngle, "assets/attack.png"));
-    }
-    
-    
-    public void useSpecial() {
-        System.out.println("必殺技発動！");
-    }
-
-    /**
-     * ゲームの再スタート処理
-     */
-    public void restartGame() {
-        initializeGame(); // 初期化処理を呼び出す
-        gameState = GameState.GAME;
-        repaint();
-    }
-
-    
 }

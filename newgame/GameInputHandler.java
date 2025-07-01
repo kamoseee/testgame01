@@ -7,10 +7,13 @@ import java.awt.event.KeyListener;
 public class GameInputHandler implements KeyListener {
     private BykinGame game;
     private boolean movingUp, movingDown, movingLeft, movingRight;
+    private StatusPanel statusPanel;
 
-    public GameInputHandler(BykinGame game) {
+    public GameInputHandler(BykinGame game, StatusPanel statusPanel) {
         this.game = game;
+        this.statusPanel = statusPanel;
     }
+
 
     /**
      * キー入力を処理します。
@@ -27,7 +30,7 @@ public class GameInputHandler implements KeyListener {
             case GAME -> handleGameInput(e);
             case GAME_OVER -> handleGameOverInput(e);
             case LEVEL_UP -> handleSkillSelectionInput(e);
-            case SHOW_STATS -> handleStatsScreenInput(e);
+            case LEVEL_UP_STATS -> handleStatsScreenInput(e);
             default -> System.out.println("無効なゲーム状態です。");
         }
     }
@@ -37,10 +40,7 @@ public class GameInputHandler implements KeyListener {
         int keyCode = e.getKeyCode();
 
         // 一時停止処理
-        if (keyCode == KeyEvent.VK_TAB) {
-            game.togglePause();
-            return;
-        }
+        
 
         // ゲームが一時停止中の場合、移動キーを無視
         if (game.isPaused()) {
@@ -98,11 +98,12 @@ public class GameInputHandler implements KeyListener {
                 game.setGameState(GameState.GAME_OVER);
                 game.repaint();
             }
-            case KeyEvent.VK_O -> handleLevelUp(); // レベルアップ処理を追加
             case KeyEvent.VK_TAB -> {
-                game.setShowStatus(true);
-                game.repaint();
+                //System.out.println("TABキーが押されました。ステータス画面に遷移します。");
+                game.togglePause();
             }
+            case KeyEvent.VK_O -> handleLevelUp(); // レベルアップ処理を追加
+            
             default -> {
                 if (!isSkillSelectionKey(e)) {
                     //System.out.println("無効なキーが押されました。何も行いません。");

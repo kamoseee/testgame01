@@ -10,8 +10,8 @@ import java.util.Set;
 
 public class SkillProjectile extends Projectile {
     private Set<Enemy> hitEnemies = new HashSet<>(); // すでに当たった敵を記録
-    public SkillProjectile(int x, int y, double angle, String imagePath) {
-        super(x, y, angle, imagePath);
+    public SkillProjectile(int x, int y, double angle, String imagePath,Object source) {
+        super(x, y, angle, imagePath,source);
     }
    
     @Override

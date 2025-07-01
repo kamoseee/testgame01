@@ -14,12 +14,21 @@ public class Projectile {
     private BufferedImage image;
     private BufferedImage maskImage; // ピクセル単位の判定用マスク画像
     private String imagePath;
+    private Object source; // 発射元（Enemy または Player）
 
-    public Projectile(int startX, int startY, double angle, String imagePath) {
+
+    public Projectile(int startX, int startY, double angle, String imagePath, Object source) {
         this.x = startX;
         this.y = startY;
         this.angle = angle;
         this.imagePath = imagePath;
+        this.source = source;
+        try {
+            image = ImageIO.read(new File(imagePath));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("画像の読み込みに失敗しました: " + imagePath);
+        }
         loadImages();
     }
 
@@ -40,6 +49,9 @@ public class Projectile {
             System.err.println("画像の読み込みに失敗しました: " + imagePath);
             e.printStackTrace();
         }
+    }
+    public Object getSource() {
+        return source;
     }
 
     public BufferedImage getImage() {

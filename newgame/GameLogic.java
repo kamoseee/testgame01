@@ -8,36 +8,39 @@ import java.util.Iterator;
 public class GameLogic {
     private BykinGame game;
 
-    public GameLogic(BykinGame game) {
+    public GameLogic(BykinGame game) {// コンストラクタ
         this.game = game;
     }
 
-    public void updateGame() {
+    public void updateGame() {// ゲームの状態を更新するメソッド
         if (game.getGameState() == GameState.LEVEL_UP) {
             return; // レベルアップ画面のときは処理を停止
+        }
+        for (Enemy enemy : game.getEnemies()) {
+            enemy.attackPlayer(game.getBykin(), game.getProjectiles());// 敵の攻撃処理
         }
 
         game.getProjectiles().removeIf(p -> p.getX() < 0 ||
                 p.getY() < 0 ||
                 p.getX() > game.getStage().getWidth() ||
-                p.getY() > game.getStage().getHeight());
+                p.getY() > game.getStage().getHeight());// プロジェクトイルの削除処理
 
         if (!game.isShowStatus() && !game.isGameOver()) {
-            game.getBykin().move(game.getDx(), game.getDy());
+            game.getBykin().move(game.getDx(), game.getDy());// キャラクターの移動処理
 
             for (Enemy enemy : game.getEnemies()) {
-                enemy.move(game.getWidth(), game.getHeight());
+                enemy.move(game.getWidth(), game.getHeight());// 敵の移動処理
 
-                BufferedImage bykinImg = game.getBykin().getMaskImage();
-                BufferedImage enemyImg = enemy.getMaskImage();
+                BufferedImage bykinImg = game.getBykin().getMaskImage();// キャラクターの画像を取得
+                BufferedImage enemyImg = enemy.getMaskImage();// 敵の画像を取得
 
                 if (checkPixelCollision(bykinImg, game.getBykin().getX(), game.getBykin().getY(),
-                        enemyImg, enemy.getX(), enemy.getY())) {
-                    if (!game.getBykin().isInvincible()) {
+                        enemyImg, enemy.getX(), enemy.getY())) {// 衝突判定
+                    if (!game.getBykin().isInvincible()) {// 無敵時間でない場合
                         game.getBykin().takeDamage(enemy.getAttack());
                         game.getBykin().setInvincible(true);
 
-                        if (game.getBykin().getStatus().getCurrentHp() <= 0) {
+                        if (game.getBykin().getStatus().getCurrentHp() <= 0) {// HPが0になった場合
                             game.setGameOver(true);
                             game.setGameState(GameState.GAME_OVER);
                         }
@@ -52,7 +55,7 @@ public class GameLogic {
         game.getDamageDisplays().removeIf(d -> System.currentTimeMillis() - d.getTimestamp() > 1000);
     }
 
-    private void handleProjectileCollisions() {
+    private void handleProjectileCollisions() {// プロジェクトイルの衝突判定を行うメソッド
         for (Iterator<Enemy> it = game.getEnemies().iterator(); it.hasNext();) {
             Enemy enemy = it.next();
             // 敵のHPが0なら衝突判定をスキップ
@@ -92,7 +95,7 @@ public class GameLogic {
     
     }
     
-    public void handleCollision(Enemy enemy, Projectile projectile) {
+    public void handleCollision(Enemy enemy, Projectile projectile) {// 衝突処理を行うメソッド
         // ダメージ計算
         int damage = projectile.getDamage();
         enemy.takeDamage(damage);
@@ -109,7 +112,7 @@ public class GameLogic {
         game.getProjectiles().remove(projectile);
     }
 
-    private void handleAutoAttack() {
+    private void handleAutoAttack() {// 自動攻撃処理を行うメソッド
         if (System.currentTimeMillis() - game.getLastAttackTime() >= 2000) {
             int centerX = game.getBykin().getX() + game.getBykin().getWidth() / 2;
             int centerY = game.getBykin().getY() + game.getBykin().getHeight() / 2;
@@ -121,13 +124,13 @@ public class GameLogic {
             int worldMouseY = game.getMouseY() + offsetY;
             double angle = Math.atan2(worldMouseY - centerY, worldMouseX - centerX);
 
-            game.getProjectiles().add(new Projectile(centerX, centerY, angle, "assets/attack.png"));
+            game.getProjectiles().add(new Projectile(centerX, centerY, angle, "assets/attack.png",game.getBykin()));
             game.setLastAttackTime(System.currentTimeMillis());
         }
     }
 
     public boolean checkPixelCollision(BufferedImage img1, int x1, int y1,
-                                       BufferedImage img2, int x2, int y2) {
+                                       BufferedImage img2, int x2, int y2) {// ピクセル単位の衝突判定を行うメソッド
         int top = Math.max(y1, y2);
         int bottom = Math.min(y1 + img1.getHeight(), y2 + img2.getHeight());
         int left = Math.max(x1, x2);

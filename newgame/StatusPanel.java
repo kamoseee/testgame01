@@ -39,5 +39,5 @@ public class StatusPanel extends JPanel {
             g.drawString("速度: " + s.getSpeed(), 10, 90);
             g.drawString("HP: " + s.getCurrentHp() + "/" + s.getMaxHp(), 10, 110);
         }
-        }
+    }
 }

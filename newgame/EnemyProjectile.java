@@ -4,8 +4,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public class EnemyProjectile extends Projectile {
-    public EnemyProjectile(int startX, int startY, double angle, String imagePath) {
-        super(startX, startY, angle, imagePath);
+    public EnemyProjectile(int startX, int startY, double angle, String imagePath,Object source) {
+        super(startX, startY, angle, imagePath,source);
     }
 
     @Override

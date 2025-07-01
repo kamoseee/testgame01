@@ -1,4 +1,5 @@
 package newgame;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -8,7 +9,7 @@ import javax.imageio.ImageIO;
 
 public class Bykin {
     private BufferedImage image;
-    private int x, y;
+    private int x, y, width, height;
     private double baseSpeed; // 最低速度を表すフィールドを追加
     private Status status;
     private Image skillImage;
@@ -18,10 +19,13 @@ public class Bykin {
     private Image specialImage;
     private BykinGame game; // `game` 変数を追加
     private SkillType selectedSkill = null; // 初期値を null に設定
+
     public Bykin(int startX, int startY, BykinGame game) {
-        
+
         this.x = startX;
         this.y = startY;
+        this.width = 50;  // 例として幅を指定
+        this.height = 50; // 例として高さを指定
         this.game = game; // `game` をセット
         this.status = new Status(1, 10, 5, 3, 100, game); // `Status` を適切に初期化
         this.baseSpeed = 0.5; // 初期値を設定（例：1.0）
@@ -36,6 +40,7 @@ public class Bykin {
         }
 
     }
+
     public SkillType getSelectedSkill() {
         return selectedSkill;
     }
@@ -43,23 +48,32 @@ public class Bykin {
     public void setSelectedSkill(SkillType skill) {
         this.selectedSkill = skill;
     }
+
     // 画像の幅を取得
     public int getWidth() {
         return (image != null) ? image.getWidth() : 0;
     }
-    
+
     public int getHeight() {
         return (image != null) ? image.getHeight() : 0;
     }
-    
+
+    public boolean checkCollision(Rectangle hitbox) {
+        Rectangle playerBounds = new Rectangle(x, y, width, height);
+        return playerBounds.intersects(hitbox);
+    }
 
     public void move(boolean movingUp, boolean movingDown, boolean movingLeft, boolean movingRight) {
         int dx = 0, dy = 0;
 
-        if (movingUp) dy -= status.getSpeed();
-        if (movingDown) dy += status.getSpeed();
-        if (movingLeft) dx -= status.getSpeed();
-        if (movingRight) dx += status.getSpeed();
+        if (movingUp)
+            dy -= status.getSpeed();
+        if (movingDown)
+            dy += status.getSpeed();
+        if (movingLeft)
+            dx -= status.getSpeed();
+        if (movingRight)
+            dx += status.getSpeed();
 
         // 実際の移動処理（範囲チェックを含む）
         move(dx, dy);
@@ -83,8 +97,6 @@ public class Bykin {
 
         game.repaint(); // 画面を更新して移動を反映
     }
-    
-    
 
     public boolean isInvincible() {
         long now = System.currentTimeMillis();
@@ -101,15 +113,14 @@ public class Bykin {
 
     public void takeDamage(int damage) {
         if (isInvincible()) {
-            //System.out.println("無敵状態のためダメージなし！");
+            // System.out.println("無敵状態のためダメージなし！");
             return;
         }
-        
+
         int reduced = Math.max(1, damage - status.getDefense()); // 最低1ダメージ
         status.setCurrentHp(status.getCurrentHp() - reduced);
         System.out.println("ダメージを受けた！ 残HP: " + status.getCurrentHp());
     }
-    
 
     public void heal(int amount) {
         status.heal(amount);
@@ -125,7 +136,6 @@ public class Bykin {
             g.drawString("画像なし", screenX + 5, screenY + 25);
         }
     }
-    
 
     public Image getSkillImage() {
         return skillImage;
@@ -136,6 +146,10 @@ public class Bykin {
     }
 
     public BufferedImage getMaskImage() {
+        return image;
+    }
+
+    public BufferedImage getImage() {
         return image;
     }
 

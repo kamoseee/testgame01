@@ -79,7 +79,7 @@ public class Status {
     
         System.out.println("レベルアップ！ 新しいレベル: " + level);
     
-        game.setGameState(GameState.SHOW_STATS); // まずステータス変化画面を表示
+        game.setGameState(GameState.LEVEL_UP_STATS); // まずステータス変化画面を表示
         game.repaint();
 
     }

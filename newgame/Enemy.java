@@ -6,6 +6,7 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import java.util.Random;
 import java.awt.image.BufferedImage;  // これを追加
+import java.util.List;
 
 
 public class Enemy {
@@ -26,6 +27,9 @@ public class Enemy {
     private long lastMoveTime;
     // 移動間隔（ミリ秒）
     private static final long MOVE_INTERVAL = 500; // 0.5秒
+    private long lastAttackTime = 0; // 最後に攻撃した時間
+    private static final long ATTACK_COOLDOWN = 2000; // 攻撃のクールダウン時間（ミリ秒）
+
     
     public Enemy(int x, int y, String imagePath, int level, int attack, int defense, int speed, int maxHp) {
         this.x = x;
@@ -73,7 +77,64 @@ public class Enemy {
     public BufferedImage getImage() {
         return image;
     }
+    public void attackPlayer(Bykin player, List<Projectile> projectiles) {
+        long currentTime = System.currentTimeMillis();
 
+        // Skip attack if cooldown is active
+        if (currentTime - lastAttackTime < ATTACK_COOLDOWN) {
+            return;
+        }
+
+        lastAttackTime = currentTime; // Update last attack time
+
+        // Calculate distance to player
+        int dx = player.getX() - this.x;
+        int dy = player.getY() - this.y;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Attack if within range
+        if (distance <= 300) { // Attack range set to 300 pixels
+            double angle = Math.atan2(dy, dx);
+            projectiles.add(new Projectile(this.x, this.y, angle, "assets/enemy_attack.png", this)); // Add source reference
+            System.out.println("Enemy attacks!");
+        }
+    }
+    
+    public boolean checkCollision(Projectile projectile) {
+        // Ignore collision if projectile source is this enemy
+        if (projectile.getSource() == this) {
+            return false;
+        }
+
+        BufferedImage projectileImage = projectile.getImage();
+        int projectileX = projectile.getX();
+        int projectileY = projectile.getY();
+
+        if (image == null || projectileImage == null || currentHp <= 0 || dying) {
+            return false;
+        }
+
+        // Collision bounds calculation
+        int top = Math.max(y, projectileY);
+        int bottom = Math.min(y + image.getHeight(), projectileY + projectileImage.getHeight());
+        int left = Math.max(x, projectileX);
+        int right = Math.min(x + image.getWidth(), projectileX + projectileImage.getWidth());
+
+        // Check collision within bounds
+        for (int py = top; py < bottom; py++) {
+            for (int px = left; px < right; px++) {
+                int myPixel = image.getRGB(px - x, py - y);
+                int projectilePixel = projectileImage.getRGB(px - projectileX, py - projectileY);
+
+                // Check for non-transparent overlap
+                if (((myPixel >> 24) & 0xFF) > 0 && ((projectilePixel >> 24) & 0xFF) > 0) {
+                    return true; // Collision detected
+                }
+            }
+        }
+
+        return false; // No collision
+    }
     // 敵のHPを減らす処理
     // 攻撃力と防御力を考慮したバージョン
     public int takeDamage(int attackerAttack) {

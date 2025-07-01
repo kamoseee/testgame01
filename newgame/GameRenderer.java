@@ -11,11 +11,11 @@ public class GameRenderer {
     }
 
     public void render(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Graphics2D g2d = (Graphics2D) g;// GraphicsをGraphics2Dにキャスト
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);// アンチエイリアスを有効にする
 
-        int offsetX = game.getBykin().getX() - game.getCharX();
-        int offsetY = game.getBykin().getY() - game.getCharY();
+        int offsetX = game.getBykin().getX() - game.getCharX();// キャラクターのX座標を取得
+        int offsetY = game.getBykin().getY() - game.getCharY();// キャラクターのY座標を取得
 
         switch (game.getGameState()) {
             case START:
@@ -40,6 +40,15 @@ public class GameRenderer {
             case GAME_OVER:
                 new GameOverScreen().draw(g2d, game.getWidth(), game.getHeight());
                 break;
+        }
+    }
+    public void drawEffects(Graphics2D g2d, int offsetX, int offsetY) {
+        for (Iterator<AOEEffect> it = game.getEffects().iterator(); it.hasNext();) {
+            AOEEffect effect = it.next();
+            effect.draw(g2d, offsetX, offsetY);
+            if (effect.isExpired()) {
+                it.remove();
+            }
         }
     }
 
@@ -136,7 +145,7 @@ public class GameRenderer {
         g.drawString("Lv." + enemy.getLevel(), x + 220, y + 15);
     }
 
-    private void drawStatusPanel(Graphics g) {
+    public void drawStatusPanel(Graphics g) {
         int panelX = game.getWidth() - 220;
         g.setFont(new Font("SansSerif", Font.PLAIN, 16));
         int panelY = 10;
